@@ -1,4 +1,6 @@
 import glob
+from ipaddress import NetmaskValueError
+from operator import ne
 import os
 import numpy as np
 import pandas as pd
@@ -13,7 +15,7 @@ class GraphGenerator:
         self.graph = None
         self.current_file = None
         self.dist_mtrx = None
-        
+        self.CAM = None
 
     def distant_matrix(self, data): # generate distant matrix 
         M = data.shape[0]
@@ -31,14 +33,22 @@ class GraphGenerator:
 
     def make_graph(self):   # make graph with k neighbors per each point
         self.graph = snap.TUNGraph.New()
+        self.CAM = ""
         for i in range(self.dist_mtrx.shape[0]):
             self.graph.AddNode(i)
+            self.CAM += "0"*i + "$"
+        idx_list = [i for i,c in enumerate(self.CAM) if c == "$"]
+        
 
         idx = 0
         for row in self.dist_mtrx:
             nearest_neighbor = row.argsort()
             for i in range(1,self.k+1):
                 self.graph.AddEdge(int(idx), int(nearest_neighbor[i]))
+                if int(idx) < int(nearest_neighbor[i]):
+                    self.CAM = self.CAM[:idx_list[int(nearest_neighbor[i])-1]+int(idx)+1] + "1" + self.CAM[idx_list[int(nearest_neighbor[i])-1]+int(idx)+2:]
+                else:
+                    self.CAM = self.CAM[:idx_list[int(idx)-1]+int(nearest_neighbor[i])+1] + "1" + self.CAM[idx_list[int(idx)-1]+int(nearest_neighbor[i])+2:]
             idx += 1
         
 
@@ -49,9 +59,14 @@ class GraphGenerator:
 
         graph_title = self.current_file[len(self.path):-4]
 
-        FOut = snap.TFOut(f'{dir_path}/{graph_title}.graph')
-        self.graph.Save(FOut)
-        FOut.Flush()
+        # FOut = snap.TFOut(f'{dir_path}/{graph_title}.graph')
+        # self.graph.Save(FOut)
+        # FOut.Flush()
+
+        CAM_file = open(f'{dir_path}/{graph_title}.txt', "w")
+        CAM_file.write(self.CAM)
+        CAM_file.close()
+
 
     def save_graphViz(self):
         dir_path = self.path + 'graphViz'
@@ -76,7 +91,7 @@ class GraphGenerator:
             self.distant_matrix(data)
             self.make_graph()
             self.save_graph()
-            self.save_graphViz()
+            #self.save_graphViz()
 
 def argparsing():
     parser = argparse.ArgumentParser(description="Make kNN Graph from MDP data")
