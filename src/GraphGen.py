@@ -59,9 +59,9 @@ class GraphGenerator:
 
         graph_title = self.current_file[len(self.path):-4]
 
-        # FOut = snap.TFOut(f'{dir_path}/{graph_title}.graph')
-        # self.graph.Save(FOut)
-        # FOut.Flush()
+        FOut = snap.TFOut(f'{dir_path}/{graph_title}.graph')
+        self.graph.Save(FOut)
+        FOut.Flush()
 
         CAM_file = open(f'{dir_path}/{graph_title}.txt', "w")
         CAM_file.write(self.CAM)
@@ -95,7 +95,7 @@ class GraphGenerator:
 
 def argparsing():
     parser = argparse.ArgumentParser(description="Make kNN Graph from MDP data")
-    parser.add_argument('--data_title', '-d', help="MDP data title for making graph")
+    parser.add_argument('--data', '-d', help="MDP data for making graph")
     parser.add_argument('--neighbors', '-k', type = int, action = 'store', default = 5, help="Number of neighbor for graph")
 
     args = parser.parse_args()
@@ -103,8 +103,9 @@ def argparsing():
 
 def main():
     args = argparsing()
+    print("Data: "+args.data, "\nNeighbors: "+ str(args.neighbors))
 
-    gmaker = GraphGenerator(args.data_title, args.neighbors)
+    gmaker = GraphGenerator(args.data, args.neighbors)
     gmaker.run()
 
 if __name__== "__main__":
